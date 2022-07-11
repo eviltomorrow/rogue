@@ -1,0 +1,5 @@
+package self
+
+var (
+	ServiceName = ""
+)
