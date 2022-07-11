@@ -52,7 +52,7 @@ func (r *Resolver) watch() {
 }
 
 func getAddresses(ups map[string]*endpoints.Update) []resolver.Address {
-	var addrs []resolver.Address
+	var addrs = make([]resolver.Address, 0, len(ups))
 	for _, up := range ups {
 		addr := resolver.Address{
 			Addr:     up.Endpoint.Addr,
@@ -60,6 +60,7 @@ func getAddresses(ups map[string]*endpoints.Update) []resolver.Address {
 		}
 		addrs = append(addrs, addr)
 	}
+
 	return addrs
 }
 
@@ -71,6 +72,7 @@ func shuffle(addresses []resolver.Address) []resolver.Address {
 		idx := rand.Intn(i)
 		addresses[last], addresses[idx] = addresses[idx], addresses[last]
 	}
+
 	return addresses
 }
 
