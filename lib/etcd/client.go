@@ -32,7 +32,7 @@ func NewClient() (*clientv3.Client, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), ExecuteTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), ConnectTimeout)
 	defer cancel()
 
 	for i, endpoint := range Endpoints {

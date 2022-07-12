@@ -23,7 +23,7 @@ var startCommand = &cobra.Command{
 			MaxAge:     28,
 			Compress:   true,
 		}
-		if err := procutil.RunInBackground(runutil.ExecutableName, []string{"-pid", pidFile}, nil, writer); err != nil {
+		if err := procutil.RunInBackground(runutil.ExecutableName, []string{"--pid", pidFile}, nil, writer); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)

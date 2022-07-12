@@ -55,6 +55,17 @@ clear:
 .PHONY: build
 build:
 
+
+.PHONY: build_email
+build_email:
+	@rm -rf bin/rogue-email/*
+	@mkdir -p bin/rogue-email/etc
+	@cp -p app/email/global.conf bin/rogue-email/etc
+	@cp -p app/email/smtp.json bin/rogue-email/etc
+	@echo "$(CGREEN)=> Building binary(rogue-email)...$(CEND)"
+	go build -race ${LDFLAGS} ${GCFLAGS} -o bin/rogue-email/bin/rogue-email app/email/main.go
+	@echo "$(CGREEN)=> Build Success!$(CEND)"
+
 # Go mod
 .PHONY: mod
 mod:export GO111MODULE=on

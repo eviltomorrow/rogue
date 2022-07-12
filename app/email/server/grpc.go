@@ -11,8 +11,8 @@ import (
 	"github.com/eviltomorrow/rogue/lib/grpclb"
 	"github.com/eviltomorrow/rogue/lib/grpcmiddleware"
 	"github.com/eviltomorrow/rogue/lib/self"
+	"github.com/eviltomorrow/rogue/lib/smtp"
 	"github.com/eviltomorrow/rogue/lib/util"
-	"github.com/eviltomorrow/rogue/pkg/service-email/smtp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -20,14 +20,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var SMTP = &conf.SMTP{}
-
 type GRPC struct {
 	Client     *clientv3.Client
 	ctx        context.Context
 	cancel     func()
 	server     *grpc.Server
 	revokeFunc func() error
+	SMTP       *conf.SMTP
 
 	pb.UnimplementedEmailServer
 }
@@ -51,8 +50,8 @@ func (g *GRPC) Send(ctx context.Context, req *pb.Mail) (*emptypb.Empty, error) {
 	}
 	var message = &smtp.Message{
 		From: smtp.Contact{
-			Name:    SMTP.Alias,
-			Address: SMTP.Username,
+			Name:    g.SMTP.Alias,
+			Address: g.SMTP.Username,
 		},
 		Subject:     req.Subject,
 		Body:        req.Body,
@@ -83,7 +82,7 @@ func (g *GRPC) Send(ctx context.Context, req *pb.Mail) (*emptypb.Empty, error) {
 	}
 	message.Bcc = bcc
 
-	if err := smtp.SendWithSSL(SMTP.Server, SMTP.Username, SMTP.Password, message); err != nil {
+	if err := smtp.SendWithSSL(g.SMTP.Server, g.SMTP.Username, g.SMTP.Password, message); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil

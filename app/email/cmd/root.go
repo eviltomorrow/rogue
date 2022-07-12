@@ -16,9 +16,15 @@ import (
 	"github.com/eviltomorrow/rogue/lib/procutil"
 	"github.com/eviltomorrow/rogue/lib/runutil"
 	"github.com/eviltomorrow/rogue/lib/self"
+	"github.com/eviltomorrow/rogue/lib/util"
+	"github.com/eviltomorrow/rogue/lib/zlog"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/resolver"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var rootCommand = &cobra.Command{
@@ -38,7 +44,7 @@ var rootCommand = &cobra.Command{
 				MaxAge:     28,
 				Compress:   true,
 			}
-			if err := procutil.RunInBackground(runutil.ExecutableName, []string{"-pid", pidFile}, nil, writer); err != nil {
+			if err := procutil.RunInBackground(runutil.ExecutableName, []string{"--pid", pidFile}, nil, writer); err != nil {
 				log.Printf("[F] Run app in background failure, nest error: %v", err)
 				os.Exit(1)
 			}
@@ -58,13 +64,15 @@ var (
 	version bool
 	daemon  bool
 	pidFile string
+	mode    string
 )
 
 func init() {
 	rootCommand.Flags().BoolVarP(&version, "version", "v", false, "version about rogue-email")
 	rootCommand.Flags().BoolVarP(&daemon, "daemon", "d", false, "run rogue-email in daemon mode")
-	rootCommand.Flags().StringVarP(&pidFile, "pid", "p", "../var/run/rogue-email.pid", "rouge-email's pid path")
-	rootCommand.Flags().StringVarP(&config, "config", "c", "", "rouge-email's pid path")
+	rootCommand.Flags().StringVarP(&pidFile, "pid", "p", "../var/run/rogue-email.pid", "rogue-email's pid path")
+	rootCommand.Flags().StringVarP(&config, "config", "c", "", "rogue-email's pid path")
+	rootCommand.Flags().StringVarP(&mode, "mode", "m", "release", "run rogue-email mode in [release/debug]")
 }
 
 func Execute() error {
@@ -86,6 +94,14 @@ func run() error {
 	if err := setupConfig(); err != nil {
 		return err
 	}
+	zlog.Info("Config info", zap.String("global", cfg.String()))
+
+	smtp, err := conf.FindSMTP(filepath.Join(filepath.Dir(cfg.Path), cfg.SMTPFile))
+	if err != nil {
+		return err
+	}
+	zlog.Info("SMTP info", zap.String("smtp", smtp.String()))
+
 	setupGlobalVars()
 
 	if err := setupRuntime(); err != nil {
@@ -101,6 +117,7 @@ func run() error {
 	resolver.Register(grpclb.NewBuilder(client))
 	var s = &server.GRPC{
 		Client: client,
+		SMTP:   smtp,
 	}
 	if s.StartupGRPC(); err != nil {
 		return err
@@ -113,7 +130,7 @@ func run() error {
 
 func setupGlobalVars() {
 	procutil.HomeDir = runutil.ExecutableDir
-	self.ServiceName = "rogue-email"
+	self.ServiceName = cfg.ServiceName
 	etcd.Endpoints = cfg.Etcd.Endpoints
 }
 
@@ -133,11 +150,26 @@ func setupRuntime() error {
 		}
 	}
 
-	closeFunc, err := pid.CreatePidFile(filepath.Join(runutil.ExecutableDir, "../var/run/rouge-email.pid"))
+	closeFunc, err := pid.CreatePidFile(filepath.Join(runutil.ExecutableDir, "../var/run/rogue-email.pid"))
 	if err != nil {
 		return err
 	}
 	self.RegisterClearFuncs(closeFunc)
+
+	if mode == "debug" {
+		go func() {
+			port, err := util.GetAvailablePort()
+			if err != nil {
+				log.Printf("[F] Http pprof start failure, nest error: %v", err)
+				os.Exit(1)
+			}
+
+			log.Printf("[I] Http pprof has listened on [http://127.0.0.1:%d/debug/pprof]", port)
+			if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil); err != nil {
+				log.Fatalf("[F] Listen and serve pprof failure, nest error: %v\r\n", err)
+			}
+		}()
+	}
 
 	return nil
 }

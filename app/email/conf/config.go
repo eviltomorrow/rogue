@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	Path        string `json:"path" toml:"-"`
 	ServiceName string `json:"service-name" toml:"service-name"`
 	Etcd        Etcd   `json:"etcd" toml:"etcd"`
 	Log         Log    `json:"log" toml:"log"`
@@ -74,6 +75,8 @@ func (c *Config) FindAndLoad(path string, override []func(cfg *Config) error) er
 			return err
 		}
 	}
+	c.Path = fp
+
 	return nil
 }
 
@@ -89,6 +92,7 @@ var Global = Config{
 		MaxSize:          20,
 		FilePath:         "../log/data.log",
 	},
+	SMTPFile: "smtp.json",
 }
 
 func SetupGlobalLog(l Log) error {

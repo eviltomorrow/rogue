@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/eviltomorrow/rogue/app/email/pb"
-	"github.com/eviltomorrow/rogue/lib/self"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials/insecure"
@@ -14,13 +13,14 @@ import (
 
 var (
 	ConnectTimeout = 5 * time.Second
+	ServiceName    = "rogue-email"
 )
 
-func New() (pb.EmailClient, error) {
+func NewEmail() (pb.EmailClient, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), ConnectTimeout)
 	defer cancel()
 
-	var target = "etcd:///grpclb/" + self.ServiceName
+	var target = "etcd:///grpclb/" + ServiceName
 	conn, err := grpc.DialContext(
 		ctx,
 		target,
