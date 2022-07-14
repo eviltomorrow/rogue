@@ -7,14 +7,15 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"github.com/eviltomorrow/rogue/lib/zlog"
 )
 
 type Config struct {
-	ServiceName string      `json:"service-name" toml:"service-name"`
-	Etcd        Etcd        `json:"etcd" toml:"etcd"`
-	MongoDB     MongoDB     `json:"mongodb" toml:"mongodb"`
-	GatherTrade GatherTrade `json:"gather-trade" toml:"gather-trade"`
-	Log         Log         `json:"log" toml:"log"`
+	ServiceName string  `json:"service-name" toml:"service-name"`
+	Etcd        Etcd    `json:"etcd" toml:"etcd"`
+	MongoDB     MongoDB `json:"mongodb" toml:"mongodb"`
+	Collect     Collect `json:"Collect" toml:"Collect"`
+	Log         Log     `json:"log" toml:"log"`
 }
 
 func (cg *Config) String() string {
@@ -30,9 +31,11 @@ type MongoDB struct {
 	DSN string `json:"dsn" toml:"dsn"`
 }
 
-type GatherTrade struct {
-	Source   string   `json:"source" toml:"source"`
-	CodeList []string `json:"code-list" toml:"code-list"`
+type Collect struct {
+	Source     string   `json:"source" toml:"source"`
+	CodeList   []string `json:"code-list" toml:"code-list"`
+	Crontab    string   `json:"crontab" toml:"crontab"`
+	RandomWait string   `json:"random-wait" toml:"random-wait"`
 }
 
 type Log struct {
@@ -87,14 +90,14 @@ func (c *Config) FindAndLoad(path string, override []func(cfg *Config) error) er
 }
 
 var Global = Config{
-	ServiceName: "rogue-email",
+	ServiceName: "rogue-collector",
 	Etcd: Etcd{
 		Endpoints: []string{"127.0.0.1:2379"},
 	},
 	MongoDB: MongoDB{
 		DSN: "mongodb://127.0.0.1:27017",
 	},
-	GatherTrade: GatherTrade{
+	Collect: Collect{
 		Source: "net126",
 		CodeList: []string{
 			"sh688***",
@@ -108,6 +111,8 @@ var Global = Config{
 			"sz001**",
 			"sz000***",
 		},
+		Crontab:    "05 17 * * MON,TUE,WED,THU,FRI",
+		RandomWait: "10,30",
 	},
 	Log: Log{
 		DisableTimestamp: false,
@@ -116,4 +121,26 @@ var Global = Config{
 		MaxSize:          20,
 		FilePath:         "../log/data.log",
 	},
+}
+
+func SetupGlobalLog(l Log) error {
+	global, prop, err := zlog.InitLogger(&zlog.Config{
+		Level:            l.Level,
+		Format:           l.Format,
+		DisableTimestamp: l.DisableTimestamp,
+		File: zlog.FileLogConfig{
+			Filename:   l.FilePath,
+			MaxSize:    l.MaxSize,
+			MaxDays:    30,
+			MaxBackups: 30,
+			Compress:   true,
+		},
+		DisableStacktrace:   true,
+		DisableErrorVerbose: true,
+	})
+	if err != nil {
+		return err
+	}
+	zlog.ReplaceGlobals(global, prop)
+	return nil
 }

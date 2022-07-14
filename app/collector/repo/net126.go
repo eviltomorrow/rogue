@@ -1,12 +1,12 @@
-package collect
+package repo
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/eviltomorrow/rogue/app/collector/model"
 	"github.com/eviltomorrow/rogue/lib/httpclient"
-	"github.com/eviltomorrow/rogue/lib/model"
 	"github.com/eviltomorrow/rogue/lib/zlog"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"

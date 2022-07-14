@@ -1,4 +1,4 @@
-package collect
+package repo
 
 import (
 	"bufio"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eviltomorrow/rogue/app/collector/model"
 	"github.com/eviltomorrow/rogue/lib/httpclient"
-	"github.com/eviltomorrow/rogue/lib/model"
 	"github.com/eviltomorrow/rogue/lib/zlog"
 	"go.uber.org/zap"
 )

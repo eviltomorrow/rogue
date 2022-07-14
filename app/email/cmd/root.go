@@ -96,33 +96,11 @@ func run() error {
 	}
 	zlog.Info("Config info", zap.String("global", cfg.String()))
 
-	smtp, err := conf.FindSMTP(filepath.Join(filepath.Dir(cfg.Path), cfg.SMTPFile))
-	if err != nil {
-		return err
-	}
-	zlog.Info("SMTP info", zap.String("smtp", smtp.String()))
-
 	setupGlobalVars()
 
 	if err := setupRuntime(); err != nil {
 		return err
 	}
-
-	client, err := etcd.NewClient()
-	if err != nil {
-		return err
-	}
-	self.RegisterClearFuncs(client.Close)
-
-	resolver.Register(grpclb.NewBuilder(client))
-	var s = &server.GRPC{
-		Client: client,
-		SMTP:   smtp,
-	}
-	if s.StartupGRPC(); err != nil {
-		return err
-	}
-	self.RegisterClearFuncs(s.ShutdownGRPC)
 
 	procutil.WaitForSigterm()
 	return nil
@@ -142,20 +120,6 @@ func setupConfig() error {
 }
 
 func setupRuntime() error {
-	for _, dir := range []string{
-		filepath.Join(runutil.ExecutableDir, "../log"),
-		filepath.Join(runutil.ExecutableDir, "../var/run")} {
-		if err := fs.CreateDir(dir); err != nil {
-			return err
-		}
-	}
-
-	closeFunc, err := pid.CreatePidFile(filepath.Join(runutil.ExecutableDir, "../var/run/rogue-email.pid"))
-	if err != nil {
-		return err
-	}
-	self.RegisterClearFuncs(closeFunc)
-
 	if mode == "debug" {
 		go func() {
 			port, err := util.GetAvailablePort()
@@ -170,6 +134,41 @@ func setupRuntime() error {
 			}
 		}()
 	}
+
+	for _, dir := range []string{
+		filepath.Join(runutil.ExecutableDir, "../log"),
+		filepath.Join(runutil.ExecutableDir, "../var/run")} {
+		if err := fs.CreateDir(dir); err != nil {
+			return err
+		}
+	}
+
+	closeFunc, err := pid.CreatePidFile(filepath.Join(runutil.ExecutableDir, "../var/run/rogue-email.pid"))
+	if err != nil {
+		return err
+	}
+	self.RegisterClearFuncs(closeFunc)
+
+	client, err := etcd.NewClient()
+	if err != nil {
+		return err
+	}
+	self.RegisterClearFuncs(client.Close)
+
+	smtp, err := conf.FindSMTP(filepath.Join(filepath.Dir(cfg.Path), cfg.SMTPFile))
+	if err != nil {
+		return err
+	}
+
+	resolver.Register(grpclb.NewBuilder(client))
+	var s = &server.GRPC{
+		Client: client,
+		SMTP:   smtp,
+	}
+	if s.StartupGRPC(); err != nil {
+		return err
+	}
+	self.RegisterClearFuncs(s.ShutdownGRPC)
 
 	return nil
 }
