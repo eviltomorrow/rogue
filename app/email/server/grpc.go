@@ -8,7 +8,7 @@ import (
 
 	"github.com/eviltomorrow/rogue/app/email/conf"
 	"github.com/eviltomorrow/rogue/app/email/pb"
-	"github.com/eviltomorrow/rogue/lib/grpclb"
+	"github.com/eviltomorrow/rogue/lib/etcd"
 	"github.com/eviltomorrow/rogue/lib/grpcmiddleware"
 	"github.com/eviltomorrow/rogue/lib/self"
 	"github.com/eviltomorrow/rogue/lib/smtp"
@@ -120,7 +120,7 @@ func (g *GRPC) StartupGRPC() error {
 
 	g.ctx, g.cancel = context.WithCancel(context.Background())
 
-	g.revokeFunc, err = grpclb.Register(g.ctx, self.ServiceName, localIP, port, 10, g.Client)
+	g.revokeFunc, err = etcd.RegisterService(g.ctx, self.ServiceName, localIP, port, 10, g.Client)
 	if err != nil {
 		return err
 	}

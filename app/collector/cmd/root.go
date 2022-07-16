@@ -21,6 +21,7 @@ import (
 	"github.com/eviltomorrow/rogue/lib/self"
 	"github.com/eviltomorrow/rogue/lib/util"
 	"github.com/eviltomorrow/rogue/lib/zlog"
+	"github.com/robfig/cron"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -28,8 +29,8 @@ import (
 
 var rootCommand = &cobra.Command{
 	Use:   "rogue-collector",
-	Short: "Collector service for gather stock trade data",
-	Long:  "Collector service for gather stock trade data",
+	Short: "Collector service for collect stock trade data",
+	Long:  "Collector service for collect stock trade data",
 	Run: func(cmd *cobra.Command, args []string) {
 		if version {
 			fmt.Println(buildinfo.GetVersion())
@@ -170,5 +171,24 @@ func setupRuntime() error {
 	}
 	self.RegisterClearFuncs(client.Close)
 
+	closeFunc, err = initCrontab()
+	if err != nil {
+		return err
+	}
+	self.RegisterClearFuncs(closeFunc)
+
 	return nil
+}
+
+func initCrontab() (func() error, error) {
+	var c = cron.New()
+	_, err := c.AddFunc(cfg.Collect.Crontab, func() { collect.SyncDataSlow(cfg.Collect.Source) })
+	if err != nil {
+		return nil, err
+	}
+	c.Start()
+	return func() error {
+		c.Stop()
+		return nil
+	}, nil
 }

@@ -1,4 +1,4 @@
-package grpclb
+package etcd
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Register(ctx context.Context, service string, host string, port int, ttl int64, client *clientv3.Client) (func() error, error) {
+func RegisterService(ctx context.Context, service string, host string, port int, ttl int64, client *clientv3.Client) (func() error, error) {
 	leaseResp, err := client.Grant(ctx, ttl)
 	if err != nil {
 		return nil, err
