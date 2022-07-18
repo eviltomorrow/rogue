@@ -16,7 +16,7 @@ var (
 	ServiceName    = "rogue-email"
 )
 
-func NewEmail() (pb.EmailClient, error) {
+func NewEmail() (pb.EmailClient, func() error, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), ConnectTimeout)
 	defer cancel()
 
@@ -29,7 +29,7 @@ func NewEmail() (pb.EmailClient, error) {
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return pb.NewEmailClient(conn), nil
+	return pb.NewEmailClient(conn), func() error { return conn.Close() }, nil
 }

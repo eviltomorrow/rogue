@@ -50,7 +50,7 @@ func SyncDataQuick(source string) (int64, error) {
 	var pipe = make(chan *model.Metadata, 128)
 	go storeData(source, pipe)
 
-	return fetchData(source, true, pipe)
+	return fetchData(source, false, pipe)
 }
 
 func SyncDataSlow(source string) (int64, error) {
@@ -64,10 +64,10 @@ func SyncDataSlow(source string) (int64, error) {
 	var pipe = make(chan *model.Metadata, 128)
 	go storeData(source, pipe)
 
-	return fetchData(source, false, pipe)
+	return fetchData(source, true, pipe)
 }
 
-func fetchData(source string, quick bool, pipe chan *model.Metadata) (int64, error) {
+func fetchData(source string, slow bool, pipe chan *model.Metadata) (int64, error) {
 	defer func() {
 		close(pipe)
 	}()
@@ -105,10 +105,10 @@ func fetchData(source string, quick bool, pipe chan *model.Metadata) (int64, err
 				count++
 			}
 
-			if quick {
-				time.Sleep(300 * time.Millisecond)
-			} else {
+			if slow {
 				time.Sleep(time.Duration(util.GenRandInt(RandomWait[0], RandomWait[1])) * time.Second)
+			} else {
+				time.Sleep(300 * time.Millisecond)
 			}
 		}
 	}

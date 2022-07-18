@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,12 +9,15 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/eviltomorrow/rogue/app/collector/collect"
 	"github.com/eviltomorrow/rogue/app/collector/conf"
+	"github.com/eviltomorrow/rogue/app/email/pb"
 	"github.com/eviltomorrow/rogue/lib/buildinfo"
 	"github.com/eviltomorrow/rogue/lib/etcd"
 	"github.com/eviltomorrow/rogue/lib/fs"
+	"github.com/eviltomorrow/rogue/lib/grpcclient"
 	"github.com/eviltomorrow/rogue/lib/mongodb"
 	"github.com/eviltomorrow/rogue/lib/pid"
 	"github.com/eviltomorrow/rogue/lib/procutil"
@@ -44,6 +48,7 @@ var rootCommand = &cobra.Command{
 				MaxAge:     28,
 				Compress:   true,
 			}
+
 			if err := procutil.RunInBackground(runutil.ExecutableName, []string{"--pid", pidFile}, nil, writer); err != nil {
 				log.Printf("[F] Run app in background failure, nest error: %v", err)
 				os.Exit(1)
@@ -154,11 +159,11 @@ func setupRuntime() error {
 		}
 	}
 
-	closeFunc, err := pid.CreatePidFile(filepath.Join(runutil.ExecutableDir, "../var/run/rogue-collector.pid"))
+	closeFunc1, err := pid.CreatePidFile(filepath.Join(runutil.ExecutableDir, "../var/run/rogue-collector.pid"))
 	if err != nil {
 		return err
 	}
-	self.RegisterClearFuncs(closeFunc)
+	self.RegisterClearFuncs(closeFunc1)
 
 	if err := mongodb.Build(); err != nil {
 		return err
@@ -171,22 +176,62 @@ func setupRuntime() error {
 	}
 	self.RegisterClearFuncs(client.Close)
 
-	closeFunc, err = initCrontab()
+	closeFunc2, err := initCrontab()
 	if err != nil {
 		return err
 	}
-	self.RegisterClearFuncs(closeFunc)
+	self.RegisterClearFuncs(closeFunc2)
 
 	return nil
 }
 
 func initCrontab() (func() error, error) {
 	var c = cron.New()
-	_, err := c.AddFunc(cfg.Collect.Crontab, func() { collect.SyncDataSlow(cfg.Collect.Source) })
+	_, err := c.AddFunc(cfg.Collect.Crontab, func() {
+		zlog.Info("Sync data slow begin")
+		var (
+			count int64
+			err   error
+			begin = time.Now()
+		)
+		defer func() {
+			if err != nil {
+				client, closeFunc, err := grpcclient.NewEmail()
+				if err != nil {
+					zlog.Error("Create email client failure", zap.Error(err))
+					return
+				}
+				defer closeFunc()
+
+				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancel()
+
+				if _, err := client.Send(ctx, &pb.Mail{
+					To: []*pb.Contact{
+						{Name: "Shepard", Address: "eviltomorrow@163.com"},
+					},
+					Subject: fmt.Sprintf("同步数据失败-[%s]", time.Now().Format("2006-01-02")),
+					Body:    fmt.Sprintf("错误描述, nest error: %v", err),
+				}); err != nil {
+					zlog.Error("Send email failure, notify [sync data slow]", zap.Error(err))
+					return
+				}
+			} else {
+				_ = 1
+			}
+		}()
+
+		count, err = collect.SyncDataSlow(cfg.Collect.Source)
+		if err != nil {
+			return
+		}
+		zlog.Info("Sync data slow complete", zap.Int64("count", count), zap.Duration("cost", time.Since(begin)))
+	})
 	if err != nil {
 		return nil, err
 	}
 	c.Start()
+
 	return func() error {
 		c.Stop()
 		return nil

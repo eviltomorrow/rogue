@@ -53,8 +53,7 @@ clear:
 
 # Build all
 .PHONY: build
-build:
-
+build: build_email build_collector
 
 .PHONY: build_email
 build_email:
@@ -65,6 +64,20 @@ build_email:
 	@echo "$(CGREEN)=> Building binary(rogue-email)...$(CEND)"
 	go build -race ${LDFLAGS} ${GCFLAGS} -o bin/rogue-email/bin/rogue-email app/email/main.go
 	@echo "$(CGREEN)=> Build Success!$(CEND)"
+
+.PHONY: build_collector
+build_collector:
+	@rm -rf bin/rogue-collector/*
+	@mkdir -p bin/rogue-collector/etc
+	@cp -p app/collector/global.conf bin/rogue-collector/etc
+	@echo "$(CGREEN)=> Building binary(rogue-collector)...$(CEND)"
+	go build -race ${LDFLAGS} ${GCFLAGS} -o bin/rogue-collector/bin/rogue-collector app/collector/main.go
+	@echo "$(CGREEN)=> Build Success!$(CEND)"
+
+.PHONY: clear
+clear:
+	@rm -rf bin/rogue-email/*
+	@rm -rf bin/rogue-collector/*
 
 # Go mod
 .PHONY: mod

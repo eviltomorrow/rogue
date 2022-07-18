@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "./;pb";
+package email;
+
+service Email {
+    rpc Send(Mail) returns (google.protobuf.Empty){}
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.StringValue){}
+}

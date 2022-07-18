@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/eviltomorrow/rogue/lib/httpmiddleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,6 +18,9 @@ var (
 )
 
 func StartupHTTP() error {
+	Router.Use(gin.Recovery())
+	Router.Use(httpmiddleware.NewLogger())
+
 	server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", Port),
 		Handler: Router,
