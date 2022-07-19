@@ -15,7 +15,7 @@ var startCommand = &cobra.Command{
 	Use:   "start",
 	Short: "Startup rogue-email app",
 	Long:  `Startup rogue-email app`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var writer = &lumberjack.Logger{
 			Filename:   filepath.Join(runutil.ExecutableDir, "../log/error.log"),
 			MaxSize:    20,

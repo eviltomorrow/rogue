@@ -11,7 +11,7 @@ var versionCommand = &cobra.Command{
 	Use:   "version",
 	Short: "Print version about rogue-email",
 	Long:  `The version about rogue-email`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println(buildinfo.GetVersion())
 	},
 }

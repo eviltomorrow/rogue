@@ -35,7 +35,7 @@ var rootCommand = &cobra.Command{
 	Use:   "rogue-collector",
 	Short: "Collector service for collect stock trade data",
 	Long:  "Collector service for collect stock trade data",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		if version {
 			fmt.Println(buildinfo.GetVersion())
 			os.Exit(0)

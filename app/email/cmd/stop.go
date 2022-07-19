@@ -15,7 +15,7 @@ var stopCommand = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop rogue-email app",
 	Long:  `Stop rogue-email app`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var pidFile = filepath.Join(runutil.ExecutableDir, "../var/run/rogue-email.pid")
 		process, err := procutil.FindWithPidFile(pidFile)
 		if err != nil {

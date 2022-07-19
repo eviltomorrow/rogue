@@ -10,7 +10,7 @@ import (
 )
 
 // UnaryServerRecoveryInterceptor recover
-func UnaryServerRecoveryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func UnaryServerRecoveryInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			debug.PrintStack()
@@ -22,7 +22,7 @@ func UnaryServerRecoveryInterceptor(ctx context.Context, req interface{}, info *
 }
 
 // StreamServerRecoveryInterceptor recover
-func StreamServerRecoveryInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+func StreamServerRecoveryInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			debug.PrintStack()

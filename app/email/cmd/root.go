@@ -31,7 +31,7 @@ var rootCommand = &cobra.Command{
 	Use:   "rogue-email",
 	Short: "Email service for rogue(common)",
 	Long:  "Email service for rogue(common)",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		if version {
 			fmt.Println(buildinfo.GetVersion())
 			os.Exit(0)
