@@ -22,8 +22,9 @@ func TestPing(t *testing.T) {
 	defer client.Close()
 
 	resolver.Register(grpclb.NewBuilder(client))
-	stub, err := NewEmail()
+	stub, closeFunc, err := NewEmail()
 	_assert.Nil(err)
+	defer closeFunc()
 
 	resp, err := stub.Ping(context.Background(), &emptypb.Empty{})
 	_assert.Nil(err)
@@ -40,8 +41,9 @@ func TestSend(t *testing.T) {
 	defer client.Close()
 
 	resolver.Register(grpclb.NewBuilder(client))
-	stub, err := NewEmail()
+	stub, closeFunc, err := NewEmail()
 	_assert.Nil(err)
+	defer closeFunc()
 
 	_, err = stub.Send(context.Background(), &pb.Mail{
 		To: []*pb.Contact{
