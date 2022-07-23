@@ -1,0 +1,2 @@
+use rogue_repo
+db.metadata.createIndex({code: 1, date: 1},{background: true})

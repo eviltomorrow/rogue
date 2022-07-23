@@ -14,7 +14,7 @@ type Config struct {
 	ServiceName string  `json:"service-name" toml:"service-name"`
 	Etcd        Etcd    `json:"etcd" toml:"etcd"`
 	MongoDB     MongoDB `json:"mongodb" toml:"mongodb"`
-	Collect     Collect `json:"Collect" toml:"Collect"`
+	Collect     Collect `json:"collect" toml:"collect"`
 	Log         Log     `json:"log" toml:"log"`
 }
 
